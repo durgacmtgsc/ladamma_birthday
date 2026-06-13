@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Message From The Future — For Sruthi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&family=Inter:wght@300;400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --neon-blue: #00d4ff;
+    --neon-pink: #ff2d9b;
+    --neon-purple: #b44aff;
+    --dark-bg: #020510;
+    --glass: rgba(255,255,255,0.04);
+    --glass-border: rgba(0,212,255,0.18);
+    --text-dim: rgba(200,220,255,0.55);
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--dark-bg);
+    font-family: 'Rajdhani', sans-serif;
+    color: #e0f0ff;
+  }
+
+  /* ── CANVAS PARTICLES ── */
+  #particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 24px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.8s ease;
+    overflow-y: auto;
+  }
+  .screen.active { opacity: 1; pointer-events: all; }
+
+  /* ── SCAN LINES OVERLAY ── */
+  .screen::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.015) 2px, rgba(0,212,255,0.015) 4px);
+    pointer-events: none; z-index: 1;
+    animation: scanMove 8s linear infinite;
+  }
+  @keyframes scanMove { from { background-position: 0 0; } to { background-position: 0 100px; } }
+
+  /* ── GLASS CARD ── */
+  .card {
+    position: relative; z-index: 2;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 40px 36px;
+    max-width: 500px; width: 100%;
+    backdrop-filter: blur(18px);
+    box-shadow: 0 0 60px rgba(0,212,255,0.08), inset 0 1px 0 rgba(255,255,255,0.06);
+    text-align: center;
+  }
+
+  /* ── SCREEN 1: SCANNER ── */
+  .scan-header {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(11px, 3vw, 14px);
+    letter-spacing: 0.25em;
+    color: var(--neon-blue);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .scan-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(16px, 5vw, 22px);
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 32px;
+    text-shadow: 0 0 20px var(--neon-blue);
+  }
+
+  /* Eye scanner */
+  .eye-container {
+    position: relative;
+    width: 140px; height: 140px;
+    margin: 0 auto 28px;
+  }
+  .eye-ring {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(0,212,255,0.3);
+    animation: ringPulse 2s ease-in-out infinite;
+  }
+  .eye-ring:nth-child(2) { inset: 12px; border-color: rgba(255,45,155,0.3); animation-delay: 0.4s; }
+  .eye-ring:nth-child(3) { inset: 24px; border-color: rgba(180,74,255,0.4); animation-delay: 0.8s; }
+  @keyframes ringPulse {
+    0%,100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.04); }
+  }
+  .eye-core {
+    position: absolute; inset: 36px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,255,0.9) 0%, rgba(0,100,200,0.6) 40%, transparent 70%);
+    box-shadow: 0 0 30px var(--neon-blue), 0 0 60px rgba(0,212,255,0.3);
+    animation: eyePulse 1.5s ease-in-out infinite;
+  }
+  @keyframes eyePulse {
+    0%,100% { box-shadow: 0 0 20px var(--neon-blue), 0 0 40px rgba(0,212,255,0.3); }
+    50% { box-shadow: 0 0 40px var(--neon-blue), 0 0 80px rgba(0,212,255,0.5); }
+  }
+  .scan-beam {
+    position: absolute; left: 36px; right: 36px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+    box-shadow: 0 0 12px var(--neon-blue);
+    animation: scanBeam 2s ease-in-out infinite;
+    top: 36px;
+  }
+  @keyframes scanBeam {
+    0% { top: 36px; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: calc(100% - 36px); opacity: 0; }
+  }
+
+  /* Scan items */
+  .scan-list { list-style: none; text-align: left; margin-bottom: 24px; }
+  .scan-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0,212,255,0.08);
+    font-size: clamp(13px, 3.5vw, 16px);
+    color: var(--text-dim);
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.5s ease;
+  }
+  .scan-item.visible { opacity: 1; transform: translateX(0); }
+  .scan-item .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(0,212,255,0.3);
+    flex-shrink: 0;
+    transition: all 0.4s;
+  }
+  .scan-item.done .dot { background: var(--neon-blue); box-shadow: 0 0 8px var(--neon-blue); }
+  .scan-item .check {
+    margin-left: auto;
+    color: var(--neon-blue);
+    font-size: 16px;
+    opacity: 0;
+    transition: all 0.4s 0.2s;
+  }
+  .scan-item.done .check { opacity: 1; }
+  .scan-item.done { color: #e0f0ff; }
+
+  /* Match result */
+  #match-result {
+    opacity: 0; transform: translateY(12px);
+    transition: all 0.7s ease;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,255,150,0.3);
+    background: rgba(0,255,150,0.04);
+    margin-top: 8px;
+  }
+  #match-result.visible { opacity: 1; transform: translateY(0); }
+  .match-badge {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(10px, 2.5vw, 12px);
+    letter-spacing: 0.2em;
+    color: #00ff96;
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px #00ff96;
+  }
+  .match-name {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(18px, 5vw, 24px);
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 20px var(--neon-pink);
+    line-height: 1.4;
+  }
+  .access-granted {
+    display: inline-block;
+    margin-top: 14px;
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(10px, 2.5vw, 13px);
+    letter-spacing: 0.15em;
+    color: #00ff96;
+    border: 1px solid rgba(0,255,150,0.4);
+    padding: 8px 20px;
+    border-radius: 40px;
+    animation: accessGlow 2s ease-in-out infinite;
+  }
+  @keyframes accessGlow {
+    0%,100% { box-shadow: 0 0 10px rgba(0,255,150,0.2); }
+    50% { box-shadow: 0 0 25px rgba(0,255,150,0.5), 0 0 50px rgba(0,255,150,0.15); }
+  }
+
+  /* ── SCREEN 2: SIGNAL ── */
+  .signal-warning {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(10px, 2.5vw, 12px);
+    letter-spacing: 0.3em;
+    color: #ffaa00;
+    margin-bottom: 10px;
+    animation: warnBlink 1.2s ease-in-out infinite;
+  }
+  @keyframes warnBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .signal-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(20px, 6vw, 28px);
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 8px;
+    text-shadow: 0 0 30px var(--neon-pink);
+    line-height: 1.3;
+  }
+  .signal-subtitle {
+    color: var(--text-dim);
+    font-size: clamp(13px, 3.5vw, 16px);
+    margin-bottom: 32px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Transmission animation */
+  .transmission {
+    position: relative;
+    width: 180px; height: 80px;
+    margin: 0 auto 32px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .wave {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(255,45,155,0.4);
+    animation: waveOut 2.5s ease-out infinite;
+  }
+  .wave:nth-child(1) { width: 60px; height: 60px; animation-delay: 0s; }
+  .wave:nth-child(2) { width: 90px; height: 90px; animation-delay: 0.5s; }
+  .wave:nth-child(3) { width: 120px; height: 120px; animation-delay: 1s; }
+  .wave:nth-child(4) { width: 160px; height: 160px; animation-delay: 1.5s; }
+  @keyframes waveOut {
+    0% { opacity: 0.8; transform: scale(0.5); }
+    100% { opacity: 0; transform: scale(1.2); }
+  }
+  .signal-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--neon-pink);
+    box-shadow: 0 0 20px var(--neon-pink), 0 0 40px rgba(255,45,155,0.5);
+    z-index: 1;
+    animation: dotPulse 1s ease-in-out infinite;
+  }
+  @keyframes dotPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+
+  .from-future {
+    font-size: clamp(13px, 3.5vw, 16px);
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
+  }
+  .future-date {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(22px, 6vw, 32px);
+    font-weight: 700;
+    color: var(--neon-pink);
+    text-shadow: 0 0 30px var(--neon-pink);
+    margin-bottom: 32px;
+    animation: dateFlicker 4s ease-in-out infinite;
+  }
+  @keyframes dateFlicker {
+    0%,100% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.4; }
+    94% { opacity: 1; }
+    96% { opacity: 0.7; }
+    97% { opacity: 1; }
+  }
+
+  /* ── SCREEN 3: MESSAGE ── */
+  .message-header {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(9px, 2vw, 11px);
+    letter-spacing: 0.3em;
+    color: var(--neon-blue);
+    margin-bottom: 20px;
+    opacity: 0.7;
+  }
+  #typewriter-text {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(15px, 4vw, 18px);
+    line-height: 1.85;
+    color: rgba(224,240,255,0.9);
+    text-align: left;
+    min-height: 200px;
+  }
+  .cursor {
+    display: inline-block;
+    width: 2px; height: 1.1em;
+    background: var(--neon-blue);
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: cursorBlink 0.7s ease-in-out infinite;
+  }
+  @keyframes cursorBlink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* ── SCREEN 4: BIRTHDAY ── */
+  #screen4 .card { max-width: 560px; }
+
+  .birthday-burst {
+    font-size: clamp(28px, 8vw, 48px);
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--neon-blue), var(--neon-pink), var(--neon-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+    text-align: center;
+    margin-bottom: 8px;
+    animation: shimmer 3s linear infinite;
+    background-size: 200% 200%;
+  }
+  @keyframes shimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .prediction-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 24px 0;
+  }
+  .pred-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 14px 10px;
+    font-size: clamp(12px, 3vw, 14px);
+    opacity: 0;
+    transform: translateY(16px);
+    transition: all 0.5s ease;
+  }
+  .pred-item.visible { opacity: 1; transform: translateY(0); }
+  .pred-label {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(9px, 2vw, 10px);
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .pred-value {
+    font-size: clamp(18px, 5vw, 26px);
+    background: linear-gradient(135deg, var(--neon-blue), var(--neon-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+  }
+  .closing-msg {
+    font-size: clamp(14px, 4vw, 17px);
+    color: rgba(224,240,255,0.8);
+    line-height: 1.8;
+    margin: 20px 0;
+    opacity: 0;
+    transition: opacity 1s ease 0.5s;
+  }
+  .closing-msg.visible { opacity: 1; }
+  .sig {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(12px, 3vw, 14px);
+    color: var(--neon-pink);
+    text-shadow: 0 0 15px var(--neon-pink);
+    margin-top: 8px;
+    opacity: 0;
+    transition: opacity 1s ease 0.8s;
+  }
+  .sig.visible { opacity: 1; }
+
+  /* ── SCREEN 5: SECRET ── */
+  .secret-header {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(10px, 2.5vw, 12px);
+    letter-spacing: 0.3em;
+    color: var(--neon-blue);
+    margin-bottom: 16px;
+    border: 1px solid rgba(0,212,255,0.2);
+    padding: 6px 16px;
+    border-radius: 40px;
+    display: inline-block;
+  }
+  .secret-msg {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(16px, 4.5vw, 20px);
+    line-height: 1.9;
+    color: rgba(224,240,255,0.9);
+    margin: 20px 0;
+    opacity: 0;
+    transform: scale(0.95);
+    transition: all 0.8s ease;
+  }
+  .secret-msg.visible { opacity: 1; transform: scale(1); }
+  .forever {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(14px, 4vw, 18px);
+    font-weight: 700;
+    color: var(--neon-pink);
+    text-shadow: 0 0 20px var(--neon-pink);
+    margin-top: 12px;
+  }
+  .heart-rain { font-size: 28px; letter-spacing: 8px; margin: 10px 0; animation: floatHearts 2s ease-in-out infinite; }
+  @keyframes floatHearts { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 14px 32px;
+    border: none; cursor: pointer;
+    border-radius: 50px;
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(11px, 3vw, 13px);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    position: relative; overflow: hidden;
+  }
+  .btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%);
+    transform: translateX(-100%);
+    transition: transform 0.4s ease;
+  }
+  .btn:hover::before { transform: translateX(100%); }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:active { transform: translateY(0); }
+
+  .btn-blue {
+    background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,100,200,0.2));
+    border: 1px solid rgba(0,212,255,0.5);
+    color: var(--neon-blue);
+    box-shadow: 0 0 20px rgba(0,212,255,0.15), inset 0 1px 0 rgba(0,212,255,0.1);
+  }
+  .btn-blue:hover { box-shadow: 0 0 35px rgba(0,212,255,0.4), inset 0 1px 0 rgba(0,212,255,0.2); }
+
+  .btn-pink {
+    background: linear-gradient(135deg, rgba(255,45,155,0.15), rgba(180,74,255,0.2));
+    border: 1px solid rgba(255,45,155,0.5);
+    color: var(--neon-pink);
+    box-shadow: 0 0 20px rgba(255,45,155,0.15), inset 0 1px 0 rgba(255,45,155,0.1);
+  }
+  .btn-pink:hover { box-shadow: 0 0 35px rgba(255,45,155,0.4), inset 0 1px 0 rgba(255,45,155,0.2); }
+
+  .btn-secret {
+    background: linear-gradient(135deg, rgba(255,45,155,0.2), rgba(180,74,255,0.25));
+    border: 1px solid rgba(180,74,255,0.5);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(180,74,255,0.2);
+    font-size: clamp(12px, 3.5vw, 14px);
+    padding: 16px 36px;
+    margin-top: 24px;
+    opacity: 0;
+    transition: all 0.5s ease;
+  }
+  .btn-secret.visible { opacity: 1; }
+  .btn-secret:hover { box-shadow: 0 0 50px rgba(180,74,255,0.5); }
+
+  /* Confetti layer */
+  #confetti-canvas { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
+
+  /* corner grid decoration */
+  .grid-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* horizontal progress bar at top */
+  .progress-bar {
+    position: fixed; top: 0; left: 0; height: 2px;
+    background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
+    box-shadow: 0 0 8px var(--neon-pink);
+    z-index: 100;
+    transition: width 1s ease;
+  }
+
+  /* Glitch effect */
+  @keyframes glitch {
+    0%,100% { clip-path: none; transform: none; }
+    92% { clip-path: none; transform: none; }
+    93% { clip-path: inset(20% 0 60% 0); transform: translateX(4px); }
+    94% { clip-path: inset(60% 0 20% 0); transform: translateX(-4px); }
+    95% { clip-path: none; transform: none; }
+  }
+  .glitch { animation: glitch 5s infinite; }
+
+  /* bottom corner labels */
+  .corner-label {
+    position: fixed;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: rgba(0,212,255,0.3);
+    z-index: 20;
+  }
+  .corner-label.bl { bottom: 16px; left: 16px; }
+  .corner-label.br { bottom: 16px; right: 16px; }
+
+  /* Floating particles around card */
+  .sparkle {
+    position: absolute;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--neon-blue);
+    box-shadow: 0 0 6px var(--neon-blue);
+    pointer-events: none;
+    animation: sparkleFloat linear infinite;
+  }
+  @keyframes sparkleFloat {
+    0% { transform: translateY(0) scale(0); opacity: 0; }
+    10% { opacity: 1; transform: scale(1); }
+    90% { opacity: 0.5; }
+    100% { transform: translateY(-80px) scale(0); opacity: 0; }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 420px) {
+    .card { padding: 28px 20px; }
+    .prediction-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<canvas id="confetti-canvas"></canvas>
+<div class="grid-bg"></div>
+<div class="progress-bar" id="progressBar" style="width:20%"></div>
+<div class="corner-label bl" id="sysLabel">SYS://FUTURE.MSG.v2036</div>
+<div class="corner-label br" id="timeLabel">T+00:00:00</div>
+
+<!-- SCREEN 1: SCANNER -->
+<div class="screen active" id="screen1">
+  <div class="card" id="card1">
+    <div class="scan-header">⬡ BIOMETRIC SCAN PROTOCOL ⬡</div>
+    <div class="scan-title glitch">🔍 Identity Verification Required</div>
+    <div class="eye-container">
+      <div class="eye-ring"></div>
+      <div class="eye-ring"></div>
+      <div class="eye-ring"></div>
+      <div class="eye-core"></div>
+      <div class="scan-beam"></div>
+    </div>
+    <ul class="scan-list" id="scanList">
+      <li class="scan-item" data-delay="800">
+        <span class="dot"></span>
+        <span>Scanning Eyes...</span>
+        <span class="check">✓</span>
+      </li>
+      <li class="scan-item" data-delay="1800">
+        <span class="dot"></span>
+        <span>Scanning Smile...</span>
+        <span class="check">✓</span>
+      </li>
+      <li class="scan-item" data-delay="2800">
+        <span class="dot"></span>
+        <span>Scanning Heart...</span>
+        <span class="check">✓</span>
+      </li>
+    </ul>
+    <div id="match-result">
+      <div class="match-badge">✅ MATCH FOUND — CONFIDENCE: 100%</div>
+      <div class="match-name">Sruthi<br><span style="color:var(--neon-pink);">Nickname: Ladamma ❤️</span></div>
+      <div class="access-granted">🔓 ACCESS GRANTED</div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: SIGNAL -->
+<div class="screen" id="screen2">
+  <div class="card">
+    <div class="signal-warning">⚠ UNEXPECTED SIGNAL DETECTED ⚠</div>
+    <div class="signal-title">Incoming Message</div>
+    <div class="signal-subtitle">Cross-temporal transmission identified</div>
+    <div class="transmission">
+      <div class="wave"></div><div class="wave"></div>
+      <div class="wave"></div><div class="wave"></div>
+      <div class="signal-dot"></div>
+    </div>
+    <div class="from-future">Incoming Message From:</div>
+    <div class="future-date">June 13, 2036</div>
+    <button class="btn btn-pink" id="openMsgBtn">📨 &nbsp;Open Message</button>
+  </div>
+</div>
+
+<!-- SCREEN 3: MESSAGE -->
+<div class="screen" id="screen3">
+  <div class="card">
+    <div class="message-header">⬡ DECRYPTED TRANSMISSION — FROM: FUTURE YOU ⬡</div>
+    <div id="typewriter-text"><span class="cursor"></span></div>
+  </div>
+</div>
+
+<!-- SCREEN 4: BIRTHDAY -->
+<div class="screen" id="screen4">
+  <div class="card">
+    <div style="font-size:clamp(28px,8vw,42px); margin-bottom:4px;">🎉</div>
+    <div class="birthday-burst">HAPPY BIRTHDAY<br>LADAMMA</div>
+    <div style="font-size:clamp(20px,5vw,28px); margin-bottom:4px;">🎉</div>
+
+    <div style="font-family:'Orbitron',monospace;font-size:clamp(9px,2vw,11px);letter-spacing:0.25em;color:var(--text-dim);margin:16px 0 4px;">FUTURE PREDICTION REPORT</div>
+    <div class="prediction-grid" id="predGrid">
+      <div class="pred-item"><div class="pred-label">HAPPINESS</div><div class="pred-value">♾️</div></div>
+      <div class="pred-item"><div class="pred-label">SUCCESS</div><div class="pred-value">♾️</div></div>
+      <div class="pred-item"><div class="pred-label">LOVE</div><div class="pred-value">♾️</div></div>
+      <div class="pred-item"><div class="pred-label">SMILES</div><div class="pred-value">♾️</div></div>
+    </div>
+
+    <div class="closing-msg" id="closingMsg">
+      No matter what year it is...<br>
+      You will always be<br>
+      <span style="font-weight:700; color:#fff; font-size:1.15em;">My Little Ladamma ❤️</span>
+    </div>
+    <div class="sig" id="sigLine">— Durga Prasad</div>
+    <button class="btn btn-secret" id="secretBtn">❤️ &nbsp;One Last Click</button>
+  </div>
+</div>
+
+<!-- SCREEN 5: SECRET -->
+<div class="screen" id="screen5">
+  <div class="card">
+    <div class="secret-header">📡 SYSTEM MESSAGE — CLASSIFIED</div>
+    <div class="heart-rain">❤️ ❤️ ❤️</div>
+    <div class="secret-msg" id="secretMsg">
+      No matter how old we become...<br>
+      I will always be your<br>
+      <span style="font-size:1.2em;font-weight:700;color:var(--neon-blue);">annoying brother</span>
+      <span style="font-size:1.3em;"> 😆❤️</span>
+    </div>
+    <div class="forever" id="foreverMsg" style="opacity:0;transition:opacity 1s ease 0.5s;">Love You Forever.</div>
+  </div>
+</div>
+
+<script>
+// ── PARTICLES ──
+const pCanvas = document.getElementById('particles');
+const pCtx = pCanvas.getContext('2d');
+let pW, pH;
+function resizeParticles() {
+  pW = pCanvas.width = window.innerWidth;
+  pH = pCanvas.height = window.innerHeight;
+}
+resizeParticles();
+window.addEventListener('resize', resizeParticles);
+
+const NPARTICLES = 80;
+const particles = Array.from({length: NPARTICLES}, () => ({
+  x: Math.random() * window.innerWidth,
+  y: Math.random() * window.innerHeight,
+  r: Math.random() * 1.5 + 0.3,
+  vx: (Math.random() - 0.5) * 0.3,
+  vy: (Math.random() - 0.5) * 0.3,
+  color: Math.random() > 0.5 ? '#00d4ff' : '#ff2d9b',
+  alpha: Math.random() * 0.6 + 0.1,
+}));
+
+function animParticles() {
+  pCtx.clearRect(0, 0, pW, pH);
+  for (const p of particles) {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = pW;
+    if (p.x > pW) p.x = 0;
+    if (p.y < 0) p.y = pH;
+    if (p.y > pH) p.y = 0;
+    pCtx.beginPath();
+    pCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    pCtx.fillStyle = p.color + Math.floor(p.alpha * 255).toString(16).padStart(2,'0');
+    pCtx.fill();
+  }
+  requestAnimationFrame(animParticles);
+}
+animParticles();
+
+// ── TIMER ──
+let elapsed = 0;
+setInterval(() => {
+  elapsed++;
+  const h = String(Math.floor(elapsed / 3600)).padStart(2,'0');
+  const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2,'0');
+  const s = String(elapsed % 60).padStart(2,'0');
+  document.getElementById('timeLabel').textContent = `T+${h}:${m}:${s}`;
+}, 1000);
+
+// ── SCREEN MANAGER ──
+function goto(id, progressPct) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('progressBar').style.width = progressPct + '%';
+}
+
+// ── SCREEN 1: SCAN SEQUENCE ──
+const scanItems = document.querySelectorAll('.scan-item');
+scanItems.forEach((item, i) => {
+  const delay = parseInt(item.dataset.delay);
+  setTimeout(() => {
+    item.classList.add('visible');
+    setTimeout(() => item.classList.add('done'), 600);
+  }, delay);
+});
+
+setTimeout(() => {
+  const matchEl = document.getElementById('match-result');
+  matchEl.classList.add('visible');
+  // play a little audio beep via Web Audio
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    [440, 520, 660].forEach((freq, i) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0, ac.currentTime + i * 0.12);
+      gain.gain.linearRampToValueAtTime(0.08, ac.currentTime + i * 0.12 + 0.02);
+      gain.gain.linearRampToValueAtTime(0, ac.currentTime + i * 0.12 + 0.18);
+      osc.start(ac.currentTime + i * 0.12);
+      osc.stop(ac.currentTime + i * 0.12 + 0.2);
+    });
+  } catch(e) {}
+}, 4200);
+
+setTimeout(() => {
+  goto('screen2', 40);
+}, 6500);
+
+// ── SCREEN 2 ──
+document.getElementById('openMsgBtn').addEventListener('click', () => {
+  goto('screen3', 60);
+  startTypewriter();
+});
+
+// ── SCREEN 3: TYPEWRITER ──
+const messageLines = [
+  { text: 'Hello Sruthi,', pause: 400 },
+  { text: '\n\nI am you from 10 years in the future.', pause: 300 },
+  { text: '\n\nDon\'t worry...', pause: 600 },
+  { text: '\n\nYou made it.', pause: 500 },
+  { text: '\n\nThe hard days passed.', pause: 200 },
+  { text: ' The dreams came true.', pause: 200 },
+  { text: ' The smile never faded.', pause: 800 },
+  { text: '\n\n\nBut today is special.', pause: 400 },
+  { text: '\n\nBecause today is your birthday', pause: 200 },
+  { text: ' ❤️', pause: 0 },
+];
+
+function startTypewriter() {
+  const el = document.getElementById('typewriter-text');
+  el.innerHTML = '';
+  let cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  el.appendChild(cursor);
+
+  let lineIdx = 0;
+  let charIdx = 0;
+  let fullText = '';
+
+  function typeNext() {
+    if (lineIdx >= messageLines.length) {
+      // Done — go to screen 4
+      setTimeout(() => {
+        goto('screen4', 80);
+        startBirthday();
+      }, 1800);
+      return;
+    }
+    const line = messageLines[lineIdx];
+    if (charIdx < line.text.length) {
+      const ch = line.text[charIdx];
+      fullText += ch;
+      el.innerHTML = fullText.replace(/\n/g, '<br>') + '<span class="cursor"></span>';
+      charIdx++;
+      const delay = ch === '\n' ? 0 : (ch === ',' || ch === '.' ? 120 : 38);
+      setTimeout(typeNext, delay);
+    } else {
+      charIdx = 0;
+      lineIdx++;
+      setTimeout(typeNext, line.pause);
+    }
+  }
+  setTimeout(typeNext, 500);
+}
+
+// ── SCREEN 4: BIRTHDAY ──
+function startBirthday() {
+  launchConfetti();
+  const preds = document.querySelectorAll('.pred-item');
+  preds.forEach((p, i) => {
+    setTimeout(() => p.classList.add('visible'), 400 + i * 180);
+  });
+  setTimeout(() => {
+    document.getElementById('closingMsg').classList.add('visible');
+    document.getElementById('sigLine').classList.add('visible');
+  }, 1400);
+  setTimeout(() => {
+    document.getElementById('secretBtn').classList.add('visible');
+  }, 2600);
+  // birthday beep
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [261, 329, 392, 523, 659, 784];
+    notes.forEach((f, i) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.frequency.value = f;
+      osc.type = 'triangle';
+      gain.gain.setValueAtTime(0, ac.currentTime + i * 0.13);
+      gain.gain.linearRampToValueAtTime(0.07, ac.currentTime + i * 0.13 + 0.03);
+      gain.gain.linearRampToValueAtTime(0, ac.currentTime + i * 0.13 + 0.28);
+      osc.start(ac.currentTime + i * 0.13);
+      osc.stop(ac.currentTime + i * 0.13 + 0.3);
+    });
+  } catch(e) {}
+}
+
+// ── SCREEN 5: SECRET ──
+document.getElementById('secretBtn').addEventListener('click', () => {
+  goto('screen5', 100);
+  setTimeout(() => {
+    document.getElementById('secretMsg').classList.add('visible');
+  }, 300);
+  setTimeout(() => {
+    document.getElementById('foreverMsg').style.opacity = '1';
+  }, 900);
+  launchConfetti(true);
+});
+
+// ── CONFETTI ──
+const cCanvas = document.getElementById('confetti-canvas');
+const cCtx = cCanvas.getContext('2d');
+cCanvas.width = window.innerWidth;
+cCanvas.height = window.innerHeight;
+window.addEventListener('resize', () => {
+  cCanvas.width = window.innerWidth;
+  cCanvas.height = window.innerHeight;
+});
+
+let confettiBits = [];
+let confettiActive = false;
+
+function launchConfetti(extra = false) {
+  confettiActive = true;
+  const count = extra ? 200 : 120;
+  const colors = ['#00d4ff','#ff2d9b','#b44aff','#ffdd00','#00ff96','#ff6b35'];
+  for (let i = 0; i < count; i++) {
+    confettiBits.push({
+      x: Math.random() * cCanvas.width,
+      y: -10 - Math.random() * 60,
+      vx: (Math.random() - 0.5) * 4,
+      vy: Math.random() * 4 + 2,
+      size: Math.random() * 8 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      spin: Math.random() * 0.3 - 0.15,
+      angle: Math.random() * Math.PI * 2,
+      shape: Math.random() > 0.5 ? 'rect' : 'circle',
+    });
+  }
+  if (!confettiActive) animConfetti();
+}
+
+function animConfetti() {
+  cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+  confettiBits = confettiBits.filter(b => b.y < cCanvas.height + 20);
+  for (const b of confettiBits) {
+    b.x += b.vx; b.y += b.vy; b.angle += b.spin; b.vy += 0.04;
+    cCtx.save();
+    cCtx.translate(b.x, b.y);
+    cCtx.rotate(b.angle);
+    cCtx.fillStyle = b.color;
+    cCtx.globalAlpha = 0.85;
+    if (b.shape === 'rect') {
+      cCtx.fillRect(-b.size/2, -b.size/4, b.size, b.size/2);
+    } else {
+      cCtx.beginPath();
+      cCtx.arc(0, 0, b.size/2, 0, Math.PI*2);
+      cCtx.fill();
+    }
+    cCtx.restore();
+  }
+  if (confettiBits.length > 0) requestAnimationFrame(animConfetti);
+  else confettiActive = false;
+}
+</script>
+</body>
+</html>
